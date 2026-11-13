@@ -1,0 +1,586 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Demand Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: title band, row of shocks, a workbench (demand chart with price control and explanation left; demand function with determinant sliders right), then two panels (demand schedule, elasticity and revenue). Demand is blue, shifts and arrows are amber-orange, buyers who drop out are grey. */
+:root {
+  --bg: #F4F6F8;
+  --surface: #FFFFFF;
+  --ink: #14212B;
+  --muted: #57677A;
+  --rule: #D8DFE5;
+  --demand: #1B5FC1;
+  --shift: #BF5A12;
+  --violet: #6A3FBF;
+  --on-solid: #FFFFFF;
+  --soft: #EAF0F7;
+  --good: #1B7548;
+  --good-soft: #DDF1E7;
+  --warn: #8A5A00;
+  --warn-soft: #F8EBCB;
+  --font-display: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D151B;
+    --surface: #141F27;
+    --ink: #E5ECF0;
+    --muted: #92A3AF;
+    --rule: #2B3B45;
+    --demand: #6BA4F2;
+    --shift: #F29A5E;
+    --violet: #B79CF2;
+    --on-solid: #0A1620;
+    --soft: #1A2833;
+    --good: #5DCB93;
+    --good-soft: #14362A;
+    --warn: #E9B755;
+    --warn-soft: #3A2E12;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D151B;
+  --surface: #141F27;
+  --ink: #E5ECF0;
+  --muted: #92A3AF;
+  --rule: #2B3B45;
+  --demand: #6BA4F2;
+  --shift: #F29A5E;
+  --violet: #B79CF2;
+  --on-solid: #0A1620;
+  --soft: #1A2833;
+  --good: #5DCB93;
+  --good-soft: #14362A;
+  --warn: #E9B755;
+  --warn-soft: #3A2E12;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.page { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.015em; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.1; }
+h2 { font-size: 18px; line-height: 1.25; }
+p { margin: 0; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--demand); }
+.top { display: flex; flex-direction: column; gap: 10px; }
+.lede { max-width: 70ch; color: var(--muted); font-size: 16px; }
+:focus-visible { outline: 2px solid var(--demand); outline-offset: 2px; }
+
+.shocks { display: flex; flex-direction: column; gap: 8px; }
+.shocks .label { font-size: 12px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+.shockrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn {
+  font: 500 14px var(--font-body);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) { border-color: var(--demand); color: var(--demand); }
+.btn.small { font-size: 13.5px; padding: 7px 12px; }
+
+.bench { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .bench, .two { grid-template-columns: minmax(0, 1fr); } }
+
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.sub { color: var(--muted); font-size: 13.5px; }
+input[type="range"] { accent-color: var(--demand); }
+output { font: 500 13.5px var(--font-mono); font-variant-numeric: tabular-nums; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; }
+.toolbar label { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.lg-d { width: 20px; height: 0; border-top: 3px solid var(--demand); }
+.lg-o { width: 20px; height: 0; border-top: 2px dashed var(--muted); }
+.lg-b { width: 12px; height: 12px; background: var(--demand); opacity: 0.4; border-radius: 2px; }
+.lg-n { width: 12px; height: 12px; background: var(--muted); opacity: 0.25; border-radius: 2px; }
+.lg-a { width: 20px; height: 0; border-top: 3px solid var(--shift); }
+
+#chartWrap, #revWrap { width: 100%; min-width: 0; }
+#chart, #rev { display: block; width: 100%; }
+.grid { stroke: var(--rule); stroke-width: 1; }
+.axis { stroke: var(--muted); stroke-width: 1; }
+.tick { fill: var(--muted); font: 11px var(--font-mono); }
+.atitle { fill: var(--ink); font: 500 12px var(--font-body); }
+.dline { stroke: var(--demand); stroke-width: 3.2; fill: none; stroke-linecap: round; }
+.oline { stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 6 4; fill: none; }
+.dlab { fill: var(--demand); font: 600 15px var(--font-display); }
+.olab { fill: var(--muted); font: 600 13px var(--font-display); }
+.stepbuy { fill: var(--demand); fill-opacity: 0.30; stroke: var(--demand); stroke-opacity: 0.6; stroke-width: 1; }
+.stepno { fill: var(--muted); fill-opacity: 0.14; stroke: var(--muted); stroke-opacity: 0.4; stroke-width: 1; }
+.arrow { stroke: var(--shift); stroke-width: 2.5; }
+.arrowhead { fill: var(--shift); }
+.shifttext { fill: var(--shift); font: 600 12px var(--font-body); }
+.pdot { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+.guide { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.55; }
+.ptext { fill: var(--ink); font: 600 11.5px var(--font-mono); }
+.trline { stroke: var(--violet); stroke-width: 3; fill: none; stroke-linecap: round; }
+.elastic { fill: var(--violet); fill-opacity: 0.10; }
+.inelastic { fill: var(--demand); fill-opacity: 0.08; }
+.zone { fill: var(--muted); font: 600 11.5px var(--font-body); }
+.peak { fill: var(--surface); stroke: var(--violet); stroke-width: 2.5; }
+
+.pricebox { display: flex; flex-direction: column; gap: 8px; }
+.pricebox label.main { display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; }
+.pricebox .lab { display: flex; justify-content: space-between; gap: 10px; }
+.pricebox input[type="range"] { width: 100%; }
+.explain { background: var(--soft); border-radius: 8px; padding: 12px 14px; font-size: 14.5px; display: flex; flex-direction: column; gap: 6px; }
+.pill { align-self: flex-start; font: 600 11.5px var(--font-body); letter-spacing: 0.03em; border-radius: 99px; padding: 2px 10px; }
+.pill.move { background: var(--surface); color: var(--demand); border: 1px solid var(--demand); }
+.pill.shift { background: var(--warn-soft); color: var(--warn); }
+.pill.rot { background: var(--good-soft); color: var(--good); }
+
+.eqblock { font: 500 13.5px/1.7 var(--font-mono); background: var(--soft); border-radius: 8px; padding: 12px 14px; overflow-x: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.eqblock .d { color: var(--demand); }
+.bigs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.big { border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.big span { font-size: 12.5px; color: var(--muted); }
+.big b { font: 600 24px var(--font-display); font-variant-numeric: tabular-nums; }
+dl.stats { margin: 0; display: flex; flex-direction: column; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--rule); }
+.row:last-child { border-bottom: 0; }
+.row dt { color: var(--muted); font-size: 13.5px; }
+.row dd { margin: 0; font: 500 14px var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+
+.group { display: flex; flex-direction: column; gap: 12px; }
+.group h3 { margin: 0; font: 600 12px var(--font-body); letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+.slider { display: flex; flex-direction: column; gap: 3px; font-size: 13.5px; }
+.slider .lab { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.slider .name small { display: block; color: var(--muted); font-size: 12px; }
+.slider .vals { display: flex; flex-direction: column; align-items: flex-end; }
+.slider .contrib { font: 500 11.5px var(--font-mono); color: var(--muted); }
+.slider .contrib.up { color: var(--good); }
+.slider .contrib.down { color: var(--shift); }
+.slider input[type="range"] { width: 100%; }
+
+.tablewrap { overflow-x: auto; }
+table.sched { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.sched th, .sched td { padding: 7px 0; border-bottom: 1px solid var(--rule); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sched th:first-child, .sched td:first-child { text-align: left; padding-right: 10px; }
+.sched thead th { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+.sched tbody th { font-weight: 400; color: var(--muted); }
+.sched td { font: 500 13.5px var(--font-mono); }
+.sched tr:last-child th, .sched tr:last-child td { border-bottom: 0; }
+.sched tr.cur th, .sched tr.cur td { background: var(--soft); color: var(--ink); }
+.foot { font-size: 12.5px; color: var(--muted); max-width: 80ch; }
+</style>
+
+<main class="page">
+  <header class="top">
+    <p class="eyebrow">Microeconomics, interactive</p>
+    <h1>Demand Lab</h1>
+    <p class="lede">Demand describes how much of a good buyers want at each price. When the price falls, people buy more. That is the law of demand, and it makes the curve slope down. Slide the price to move along the curve, then change what buyers care about and watch the whole curve shift.</p>
+  </header>
+
+  <section class="shocks" aria-label="Shocks to demand">
+    <span class="label">Try a change at the chai stall</span>
+    <div class="shockrow" id="shocks"></div>
+  </section>
+
+  <div class="bench">
+    <section class="card" aria-labelledby="chartTitle">
+      <div>
+        <h2 id="chartTitle">Demand for cups of chai</h2>
+        <p class="sub">Price in ₹ per cup, quantity in cups per day at one roadside stall. Figures are illustrative.</p>
+      </div>
+      <div class="toolbar">
+        <label><input type="checkbox" id="tSteps" checked> Show buyers as steps</label>
+        <label><input type="checkbox" id="tOrig" checked> Show original curve</label>
+      </div>
+      <div id="chartWrap"><svg id="chart" role="img" aria-label="Demand curve for chai"></svg></div>
+      <div class="legend" aria-hidden="true">
+        <span><i class="lg-d"></i>Demand curve</span>
+        <span><i class="lg-o"></i>Original curve</span>
+        <span><i class="lg-b"></i>Buyer group that buys</span>
+        <span><i class="lg-n"></i>Buyer group priced out</span>
+        <span><i class="lg-a"></i>Shift at this price</span>
+      </div>
+
+      <div class="pricebox">
+        <label class="main" for="rP"><span class="lab"><span>Price of a cup</span><output id="oP" for="rP"></output></span><input type="range" id="rP" min="0" max="40" step="0.5"></label>
+      </div>
+      <div class="explain" id="explain" aria-live="polite"></div>
+    </section>
+
+    <div class="stack" style="display:flex;flex-direction:column;gap:20px;min-width:0">
+      <section class="card" aria-labelledby="fnTitle">
+        <h2 id="fnTitle">The demand function</h2>
+        <div class="eqblock" id="eqblock"></div>
+        <div class="bigs">
+          <div class="big"><span>Quantity demanded</span><b id="bigQ"></b></div>
+          <div class="big"><span>Buyer groups buying</span><b id="bigB"></b></div>
+        </div>
+        <dl class="stats" id="stats"></dl>
+      </section>
+
+      <section class="card" aria-labelledby="slTitle">
+        <div>
+          <h2 id="slTitle">What shifts demand</h2>
+          <p class="sub">Each slider changes the intercept a. The cups shown are that factor's effect at every price.</p>
+        </div>
+        <div class="group" id="detGroup"></div>
+        <div class="group">
+          <h3>What tilts demand</h3>
+          <label class="slider" for="rB"><span class="lab"><span class="name">Price sensitivity b<small>Cups lost for each ₹1 rise in price</small></span><span class="vals"><output id="oB" for="rB"></output></span></span><input type="range" id="rB" min="8" max="20" step="0.5"></label>
+        </div>
+        <div class="toolbar"><button class="btn small" id="bReset" type="button">Reset to the starting curve</button></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="two">
+    <section class="card" aria-labelledby="schTitle">
+      <div>
+        <h2 id="schTitle">Demand schedule</h2>
+        <p class="sub">The same curve as a table. The highlighted row is the price you chose.</p>
+      </div>
+      <div class="tablewrap"><table class="sched" id="sched"></table></div>
+    </section>
+
+    <section class="card" aria-labelledby="elTitle">
+      <div>
+        <h2 id="elTitle">Elasticity and revenue</h2>
+        <p class="sub">How strongly buyers react to price decides whether a price rise brings in more money or less.</p>
+      </div>
+      <div id="revWrap"><svg id="rev" role="img" aria-label="Total revenue against price"></svg></div>
+      <dl class="stats" id="revstats"></dl>
+      <p class="sub" id="revtext"></p>
+    </section>
+  </div>
+
+  <p class="foot">Demand here is a straight line: Qd = a − b·P, where a collects everything except the good's own price. Real demand curves bend, and the effects of income, substitutes and tastes differ from good to good. Numbers are illustrative.</p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  /*MATH-START*/
+  var BASE = { b: 12, inc: 100, pc: 30, pb: 10, temp: 28, foot: 1000 };
+  var A0 = 240, QMAX = 400, PMAX = 40, K = 16;
+  function contrib(m) {
+    return { inc: 0.8 * (m.inc - 100), pc: 1.5 * (m.pc - 30), pb: -3 * (m.pb - 10), temp: -2 * (m.temp - 28), foot: 0.06 * (m.foot - 1000) };
+  }
+  function aOf(m) { var c = contrib(m); return A0 + c.inc + c.pc + c.pb + c.temp + c.foot; }
+  function qd(m, P) { return Math.max(0, aOf(m) - m.b * P); }
+  function pOf(m, Q) { return (aOf(m) - Q) / m.b; }
+  function elas(m, P) { var q = qd(m, P); return q > 0 ? -m.b * P / q : -Infinity; }
+  function rev(m, P) { return P * qd(m, P); }
+  function peakP(m) { return aOf(m) / (2 * m.b); }
+  function steps(m) {
+    var a = aOf(m), u = a / K, out = [];
+    for (var i = 0; i < K; i++) out.push({ q0: i * u, q1: (i + 1) * u, wtp: pOf(m, (i + 0.5) * u) });
+    return out;
+  }
+  /*MATH-END*/
+
+  var $ = function (s) { return document.querySelector(s); };
+  var par = { b: BASE.b, inc: BASE.inc, pc: BASE.pc, pb: BASE.pb, temp: BASE.temp, foot: BASE.foot };
+  var S = { p: 10, pFrom: 10, drag: false, last: { type: 'init' }, steps: true, orig: true };
+
+  function minus(s) { return s.replace('-', '−'); }
+  function num(v, d) {
+    if (d === undefined) d = 1;
+    if (v === -Infinity || v === Infinity) return v < 0 ? '−∞' : '∞';
+    if (!isFinite(v)) return '—';
+    if (Math.abs(v) < Math.pow(10, -d) / 2) v = 0;
+    return minus(v.toFixed(d));
+  }
+  function sgn(v, d) { return (v > 0.0001 ? '+' : '') + num(v, d === undefined ? 0 : d); }
+  function rup(v, d) { return '₹' + num(v, d === undefined ? 1 : d); }
+  function changed() { return Object.keys(BASE).some(function (k) { return Math.abs(par[k] - BASE[k]) > 1e-9; }); }
+
+  /* ---------- determinants ---------- */
+  var DETS = [
+    { key: 'inc', name: 'Income', note: 'Index, 100 = typical customer', min: 60, max: 140, step: 1, d: 0, fmt: function (v) { return num(v, 0); } },
+    { key: 'pc', name: 'Price of coffee', note: 'A substitute for chai', min: 15, max: 50, step: 1, d: 0, fmt: function (v) { return rup(v, 0); } },
+    { key: 'pb', name: 'Price of biscuits', note: 'A complement to chai', min: 5, max: 20, step: 1, d: 0, fmt: function (v) { return rup(v, 0); } },
+    { key: 'temp', name: 'Temperature', note: 'Chai is a hot drink', min: 10, max: 40, step: 1, d: 0, fmt: function (v) { return num(v, 0) + ' °C'; } },
+    { key: 'foot', name: 'People passing by', note: 'Customers per day nearby', min: 600, max: 1600, step: 25, d: 0, fmt: function (v) { return num(v, 0); } }
+  ];
+  var grp = $('#detGroup');
+  DETS.forEach(function (dt) {
+    var l = document.createElement('label');
+    l.className = 'slider'; l.setAttribute('for', 'r_' + dt.key);
+    l.innerHTML = '<span class="lab"><span class="name">' + dt.name + '<small>' + dt.note + '</small></span><span class="vals"><output id="o_' + dt.key + '" for="r_' + dt.key + '"></output><span class="contrib" id="c_' + dt.key + '"></span></span></span>' +
+      '<input type="range" id="r_' + dt.key + '" min="' + dt.min + '" max="' + dt.max + '" step="' + dt.step + '">';
+    grp.appendChild(l);
+  });
+
+  function explainDet(key) {
+    var v = par[key], up = v > BASE[key];
+    if (Math.abs(v - BASE[key]) < 1e-9) return null;
+    var head, why;
+    if (key === 'inc') {
+      head = 'Income index ' + (up ? 'rose' : 'fell') + ' from ' + num(BASE.inc, 0) + ' to ' + num(v, 0) + '.';
+      why = 'Chai is a normal good, so people with ' + (up ? 'more' : 'less') + ' income buy ' + (up ? 'more' : 'fewer') + ' cups at every price.';
+    } else if (key === 'pc') {
+      head = 'Coffee now costs ' + rup(v, 0) + ' (was ' + rup(BASE.pc, 0) + ').';
+      why = 'Coffee is a substitute. ' + (up ? 'Some coffee drinkers switch to chai' : 'Some chai drinkers switch to coffee') + ', so chai demand ' + (up ? 'rises' : 'falls') + ' at every price.';
+    } else if (key === 'pb') {
+      head = 'Biscuits now cost ' + rup(v, 0) + ' (was ' + rup(BASE.pb, 0) + ').';
+      why = 'Biscuits are a complement, bought together with chai. ' + (up ? 'Dearer biscuits make the pair less attractive' : 'Cheaper biscuits make the pair more attractive') + ', so chai demand ' + (up ? 'falls' : 'rises') + ' at every price.';
+    } else if (key === 'temp') {
+      head = 'Temperature is ' + num(v, 0) + ' °C (was ' + num(BASE.temp, 0) + ' °C).';
+      why = 'Chai is a hot drink, so ' + (up ? 'warmer weather lowers' : 'colder weather raises') + ' demand at every price. This is a change in tastes.';
+    } else if (key === 'foot') {
+      head = 'About ' + num(v, 0) + ' people pass by each day (was ' + num(BASE.foot, 0) + ').';
+      why = (up ? 'More' : 'Fewer') + ' potential customers means ' + (up ? 'more' : 'fewer') + ' cups demanded at every price.';
+    }
+    return { head: head, why: why };
+  }
+
+  function drawExplain() {
+    var P = S.p, Q = qd(par, P), Q0 = qd(BASE, P), L = S.last, h = '', pill = '', a = aOf(par);
+    if (L.type === 'price' && Math.abs(S.pFrom - P) > 1e-9) {
+      var Qf = qd(par, S.pFrom);
+      pill = '<span class="pill move">Movement along the curve</span>';
+      h = '<p>You ' + (P > S.pFrom ? 'raised' : 'cut') + ' the price from ' + rup(S.pFrom) + ' to ' + rup(P) + '. Quantity demanded ' + (Q < Qf ? 'fell' : 'rose') + ' from ' + num(Qf, 0) + ' to ' + num(Q, 0) + ' cups a day. The curve itself did not move, because nothing that shapes demand changed. This is the law of demand at work.</p>';
+    } else if (L.type === 'shift') {
+      var ex = explainDet(L.key);
+      if (ex) {
+        var dq = Q - Q0;
+        pill = '<span class="pill shift">Shift of the curve</span>';
+        h = '<p>' + ex.head + ' ' + ex.why + '</p><p>The whole curve has moved ' + (a > A0 ? 'right' : 'left') + ' of the starting one. At ' + rup(P) + ' buyers now want ' + num(Q, 0) + ' cups instead of ' + num(Q0, 0) + ' (' + sgn(dq) + ').' + (Math.abs(a - A0) < 0.5 ? ' Together with the other changes, the net shift is about zero.' : '') + '</p>';
+      }
+    } else if (L.type === 'tilt' && Math.abs(par.b - BASE.b) > 1e-9) {
+      var steeper = par.b > BASE.b;
+      pill = '<span class="pill rot">Change in slope</span>';
+      h = '<p>Price sensitivity went from ' + num(BASE.b, 1) + ' to ' + num(par.b, 1) + '. Buyers react ' + (steeper ? 'more' : 'less') + ' strongly to price, so the curve is ' + (steeper ? 'flatter' : 'steeper') + ' and pivots around its intercept on the quantity axis. At ' + rup(P) + ' quantity demanded is ' + num(Q, 0) + ' cups instead of ' + num(Q0, 0) + '.</p>';
+    }
+    if (!h) {
+      pill = '<span class="pill move">Start here</span>';
+      h = '<p>Drag the price slider to move along the curve. Change income, other prices, weather or footfall to shift the whole curve. The dashed line stays behind so you can compare.</p>';
+    }
+    $('#explain').innerHTML = pill + h;
+  }
+
+  /* ---------- main chart ---------- */
+  var svg = $('#chart'), wrap = $('#chartWrap');
+  var W = 640, H = 420, M = { l: 54, r: 16, t: 14, b: 46 };
+  function layout() {
+    W = Math.max(280, wrap.clientWidth || 640);
+    H = Math.round(Math.min(480, Math.max(320, W * 0.64)));
+    M.l = W < 480 ? 44 : 54;
+    svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var rw = Math.max(260, $('#revWrap').clientWidth || 400), rh = Math.round(Math.min(300, Math.max(230, rw * 0.62)));
+    $('#rev').setAttribute('width', rw); $('#rev').setAttribute('height', rh); $('#rev').setAttribute('viewBox', '0 0 ' + rw + ' ' + rh);
+  }
+  function sx(q) { return M.l + q / QMAX * (W - M.l - M.r); }
+  function sy(p) { return H - M.b - p / PMAX * (H - M.t - M.b); }
+  function niceTicks(min, max, n) {
+    var raw = (max - min) / n, pow = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / pow;
+    var step = (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * pow, out = [];
+    for (var v = Math.ceil(min / step - 1e-9) * step; v <= max + 1e-9; v += step) out.push(+v.toFixed(10));
+    return { v: out, step: step };
+  }
+
+  function drawChart() {
+    var a = aOf(par), P = S.p, Q = qd(par, P), s = '', i;
+    var pl = M.l, pr = W - M.r, pt = M.t, pb = H - M.b;
+    s += '<defs><clipPath id="clip"><rect x="' + pl + '" y="' + pt + '" width="' + (pr - pl) + '" height="' + (pb - pt) + '"/></clipPath></defs>';
+    niceTicks(0, PMAX, 4).v.forEach(function (v) {
+      s += '<line class="grid" x1="' + pl + '" x2="' + pr + '" y1="' + sy(v) + '" y2="' + sy(v) + '"/>';
+      s += '<text class="tick" x="' + (pl - 8) + '" y="' + (sy(v) + 4) + '" text-anchor="end">' + v + '</text>';
+    });
+    niceTicks(0, QMAX, W < 480 ? 4 : 8).v.forEach(function (v) {
+      s += '<line class="grid" x1="' + sx(v) + '" x2="' + sx(v) + '" y1="' + pt + '" y2="' + pb + '"/>';
+      s += '<text class="tick" x="' + sx(v) + '" y="' + (pb + 16) + '" text-anchor="middle">' + v + '</text>';
+    });
+    s += '<line class="axis" x1="' + pl + '" x2="' + pr + '" y1="' + pb + '" y2="' + pb + '"/>';
+    s += '<line class="axis" x1="' + pl + '" x2="' + pl + '" y1="' + pt + '" y2="' + pb + '"/>';
+    s += '<text class="atitle" x="' + ((pl + pr) / 2) + '" y="' + (H - 8) + '" text-anchor="middle">Quantity demanded (cups per day)</text>';
+    s += '<text class="atitle" transform="translate(13 ' + ((pt + pb) / 2) + ') rotate(-90)" text-anchor="middle">Price (₹ per cup)</text>';
+
+    var buying = 0;
+    s += '<g clip-path="url(#clip)">';
+    if (S.steps) {
+      steps(par).forEach(function (st) {
+        var buys = st.wtp >= P; if (buys) buying++;
+        s += '<rect class="' + (buys ? 'stepbuy' : 'stepno') + '" x="' + sx(st.q0) + '" y="' + sy(st.wtp) + '" width="' + (sx(st.q1) - sx(st.q0)) + '" height="' + Math.max(0, sy(0) - sy(st.wtp)) + '"/>';
+      });
+    } else {
+      steps(par).forEach(function (st) { if (st.wtp >= P) buying++; });
+    }
+    if (S.orig && changed()) {
+      var ao = aOf(BASE);
+      s += '<line class="oline" x1="' + sx(ao) + '" y1="' + sy(0) + '" x2="' + sx(ao - BASE.b * PMAX) + '" y2="' + sy(PMAX) + '"/>';
+    }
+    s += '<line class="dline" x1="' + sx(a) + '" y1="' + sy(0) + '" x2="' + sx(a - par.b * PMAX) + '" y2="' + sy(PMAX) + '"/>';
+    s += '</g>';
+
+    var Q0 = qd(BASE, P);
+    if (changed() && Math.abs(Q - Q0) > 1 && S.last.type !== 'price') {
+      var x0 = sx(Q0), x1 = sx(Q), y = sy(P), dir = x1 > x0 ? 1 : -1;
+      s += '<line class="arrow" x1="' + x0 + '" y1="' + y + '" x2="' + (x1 - dir * 7) + '" y2="' + y + '"/>';
+      s += '<polygon class="arrowhead" points="' + x1 + ',' + y + ' ' + (x1 - dir * 11) + ',' + (y - 6) + ' ' + (x1 - dir * 11) + ',' + (y + 6) + '"/>';
+      s += '<text class="shifttext" x="' + ((x0 + x1) / 2) + '" y="' + (y - 10) + '" text-anchor="middle">' + sgn(Q - Q0) + ' cups</text>';
+    }
+
+    s += '<line class="guide" x1="' + sx(Q) + '" x2="' + sx(Q) + '" y1="' + pb + '" y2="' + sy(P) + '"/>';
+    s += '<line class="guide" x1="' + pl + '" x2="' + sx(Q) + '" y1="' + sy(P) + '" y2="' + sy(P) + '"/>';
+    s += '<circle class="pdot" cx="' + sx(Q) + '" cy="' + sy(P) + '" r="6.5"/>';
+    s += '<text class="ptext" x="' + (pl + 6) + '" y="' + (sy(P) - 6) + '">' + rup(P) + '</text>';
+    s += '<text class="ptext" x="' + (sx(Q) + 6) + '" y="' + (pb - 6) + '">' + num(Q, 0) + ' cups</text>';
+
+    var lp = Math.min(PMAX * 0.92, a / par.b * 0.88);
+    s += '<text class="dlab" x="' + (sx(a - par.b * lp) + 10) + '" y="' + (sy(lp) + 2) + '">D</text>';
+    if (S.orig && changed()) {
+      var lo = Math.min(PMAX * 0.92, aOf(BASE) / BASE.b * 0.6);
+      s += '<text class="olab" x="' + (sx(aOf(BASE) - BASE.b * lo) + 8) + '" y="' + (sy(lo) + 2) + '">D₀</text>';
+    }
+    svg.innerHTML = s;
+    svg.setAttribute('aria-label', 'Demand curve for chai. At ' + num(P) + ' rupees per cup, quantity demanded is ' + num(Q, 0) + ' cups per day.');
+    return buying;
+  }
+
+  /* ---------- revenue chart ---------- */
+  function drawRev() {
+    var el = $('#rev'), w = +el.getAttribute('width'), h = +el.getAttribute('height');
+    var m = { l: 52, r: 12, t: 14, b: 38 }, a = aOf(par), P = S.p;
+    var pk = peakP(par), trMax = a * a / (4 * par.b);
+    var tk = niceTicks(0, trMax * 1.1, 4), yMax = tk.step * Math.ceil(trMax * 1.08 / tk.step);
+    var X = function (p) { return m.l + p / PMAX * (w - m.l - m.r); };
+    var Y = function (v) { return h - m.b - v / yMax * (h - m.t - m.b); };
+    var s = '', i;
+    s += '<defs><clipPath id="clip2"><rect x="' + m.l + '" y="' + m.t + '" width="' + (w - m.l - m.r) + '" height="' + (h - m.t - m.b) + '"/></clipPath></defs>';
+    niceTicks(0, yMax, 4).v.forEach(function (v) {
+      s += '<line class="grid" x1="' + m.l + '" x2="' + (w - m.r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>';
+      s += '<text class="tick" x="' + (m.l - 8) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + v + '</text>';
+    });
+    niceTicks(0, PMAX, 4).v.forEach(function (v) {
+      s += '<line class="grid" x1="' + X(v) + '" x2="' + X(v) + '" y1="' + m.t + '" y2="' + (h - m.b) + '"/>';
+      s += '<text class="tick" x="' + X(v) + '" y="' + (h - m.b + 16) + '" text-anchor="middle">' + v + '</text>';
+    });
+    s += '<line class="axis" x1="' + m.l + '" x2="' + (w - m.r) + '" y1="' + (h - m.b) + '" y2="' + (h - m.b) + '"/>';
+    s += '<line class="axis" x1="' + m.l + '" x2="' + m.l + '" y1="' + m.t + '" y2="' + (h - m.b) + '"/>';
+    s += '<text class="atitle" x="' + ((m.l + w - m.r) / 2) + '" y="' + (h - 6) + '" text-anchor="middle">Price (₹ per cup)</text>';
+    s += '<text class="atitle" transform="translate(12 ' + ((m.t + h - m.b) / 2) + ') rotate(-90)" text-anchor="middle">Revenue (₹ per day)</text>';
+    var pkx = Math.min(pk, PMAX), chx = Math.min(a / par.b, PMAX);
+    s += '<g clip-path="url(#clip2)">';
+    s += '<rect class="inelastic" x="' + X(0) + '" y="' + m.t + '" width="' + (X(pkx) - X(0)) + '" height="' + (h - m.t - m.b) + '"/>';
+    s += '<rect class="elastic" x="' + X(pkx) + '" y="' + m.t + '" width="' + Math.max(0, X(chx) - X(pkx)) + '" height="' + (h - m.t - m.b) + '"/>';
+    var pts = [];
+    for (i = 0; i <= 80; i++) { var pp = PMAX * i / 80; pts.push(X(pp).toFixed(1) + ',' + Y(rev(par, pp)).toFixed(1)); }
+    s += '<polyline class="trline" points="' + pts.join(' ') + '"/>';
+    s += '</g>';
+    if (pk <= PMAX) {
+      s += '<circle class="peak" cx="' + X(pk) + '" cy="' + Y(trMax) + '" r="6"/>';
+    }
+    s += '<text class="zone" x="' + (X(0) + 6) + '" y="' + (m.t + 14) + '">Inelastic</text>';
+    if (chx - pkx > 3) s += '<text class="zone" x="' + (X(pkx) + 6) + '" y="' + (m.t + 14) + '">Elastic</text>';
+    s += '<line class="guide" x1="' + X(P) + '" x2="' + X(P) + '" y1="' + (h - m.b) + '" y2="' + Y(rev(par, P)) + '"/>';
+    s += '<circle class="pdot" cx="' + X(P) + '" cy="' + Y(rev(par, P)) + '" r="6"/>';
+    el.innerHTML = s;
+  }
+
+  /* ---------- panels ---------- */
+  function row(l, v) { return '<div class="row"><dt>' + l + '</dt><dd>' + v + '</dd></div>'; }
+  function drawPanels(buying) {
+    var a = aOf(par), P = S.p, Q = qd(par, P), E = elas(par, P), R = rev(par, P), pk = peakP(par);
+    $('#eqblock').innerHTML =
+      '<div class="d">Qd = a − b·P</div>' +
+      '<div class="d">Qd = ' + num(a, 1) + ' − ' + num(par.b, 1) + ' × ' + num(P, 1) + ' = ' + num(Q, 1) + '</div>' +
+      '<div>a = 240 (base) ' + DETS.map(function (dt) { var c = contrib(par)[dt.key]; return Math.abs(c) < 0.05 ? '' : (c < 0 ? '− ' : '+ ') + num(Math.abs(c), 1); }).join(' ').replace(/\s+/g, ' ') + ' = ' + num(a, 1) + '</div>';
+    $('#bigQ').textContent = num(Q, 0) + ' cups';
+    $('#bigB').textContent = buying + ' of ' + K;
+    $('#stats').innerHTML =
+      row('Price now', rup(P, 2)) + row('Highest price anyone pays (a ÷ b)', rup(a / par.b, 2)) + row('Intercept a', num(a, 1));
+    var cn = contrib(par);
+    DETS.forEach(function (dt) {
+      $('#r_' + dt.key).value = par[dt.key];
+      $('#o_' + dt.key).textContent = dt.fmt(par[dt.key]);
+      var c = cn[dt.key], el = $('#c_' + dt.key);
+      el.textContent = Math.abs(c) < 0.05 ? 'no effect' : sgn(c, 1) + ' cups';
+      el.className = 'contrib' + (c > 0.05 ? ' up' : c < -0.05 ? ' down' : '');
+    });
+    $('#rB').value = par.b; $('#oB').textContent = num(par.b, 1);
+    $('#rP').value = P; $('#oP').textContent = rup(P, 1);
+
+    var prices = [0, 4, 8, 12, 16, 20, 24, 28, 32, 36], near = prices.reduce(function (b, p) { return Math.abs(p - P) < Math.abs(b - P) ? p : b; }, prices[0]);
+    var t = '<thead><tr><th>Price (₹)</th><th>Cups now</th><th>Cups at start</th><th>Change</th></tr></thead><tbody>';
+    prices.forEach(function (p) {
+      var qn = qd(par, p), qo = qd(BASE, p);
+      t += '<tr' + (p === near ? ' class="cur"' : '') + '><th scope="row">' + p + '</th><td>' + num(qn, 0) + '</td><td>' + num(qo, 0) + '</td><td>' + sgn(qn - qo) + '</td></tr>';
+    });
+    $('#sched').innerHTML = t + '</tbody>';
+
+    var label = E === -Infinity ? 'no one buys' : (Math.abs(E) > 1.02 ? 'elastic' : Math.abs(E) < 0.98 ? 'inelastic' : 'unit elastic');
+    $('#revstats').innerHTML =
+      row('Elasticity at this price', num(E, 2) + ' (' + label + ')') + row('Revenue at this price', rup(R, 0) + ' a day') +
+      row('Revenue-maximising price', rup(pk, 2));
+    var tx;
+    if (Q <= 0) tx = 'At this price nobody buys, so revenue is zero.';
+    else if (P < 0.01) tx = 'At a price of zero there is no revenue, however many cups are given away.';
+    else if (Math.abs(E) > 1.02) tx = 'Demand is elastic here: a 1% price rise cuts quantity by about ' + num(Math.abs(E), 1) + '%, so revenue falls. Lowering the price would raise revenue.';
+    else if (Math.abs(E) < 0.98) tx = 'Demand is inelastic here: a 1% price rise cuts quantity by only about ' + num(Math.abs(E), 1) + '%, so revenue rises. Raising the price would raise revenue.';
+    else tx = 'Demand is unit elastic here, which is where revenue is at its peak.';
+    $('#revtext').textContent = tx;
+  }
+
+  function render() {
+    layout2();
+    var b = drawChart(); drawPanels(b); drawExplain(); drawRev();
+  }
+  function layout2() { /* sizes are set on resize only */ }
+
+  /* ---------- events ---------- */
+  DETS.forEach(function (dt) {
+    $('#r_' + dt.key).addEventListener('input', function (e) {
+      par[dt.key] = parseFloat(e.target.value); S.last = { type: 'shift', key: dt.key }; render();
+    });
+  });
+  $('#rB').addEventListener('input', function (e) { par.b = parseFloat(e.target.value); S.last = { type: 'tilt' }; render(); });
+  $('#rP').addEventListener('input', function (e) {
+    if (!S.drag) { S.pFrom = S.p; S.drag = true; }
+    S.p = parseFloat(e.target.value); S.last = { type: 'price' }; render();
+  });
+  $('#rP').addEventListener('change', function () { S.drag = false; });
+  $('#tSteps').addEventListener('change', function (e) { S.steps = e.target.checked; render(); });
+  $('#tOrig').addEventListener('change', function (e) { S.orig = e.target.checked; render(); });
+  $('#bReset').addEventListener('click', function () {
+    Object.keys(BASE).forEach(function (k) { par[k] = BASE[k]; });
+    S.last = { type: 'init' }; render();
+  });
+
+  var SHOCKS = [
+    { name: 'Cold snap', key: 'temp', val: 14 },
+    { name: 'Coffee gets dearer', key: 'pc', val: 45 },
+    { name: 'Biscuits get dearer', key: 'pb', val: 16 },
+    { name: 'Festival crowds', key: 'foot', val: 1400 },
+    { name: 'Incomes fall', key: 'inc', val: 75 }
+  ];
+  var shocks = $('#shocks');
+  SHOCKS.forEach(function (sh) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn'; b.textContent = sh.name;
+    b.addEventListener('click', function () { par[sh.key] = sh.val; S.last = { type: 'shift', key: sh.key }; render(); });
+    shocks.appendChild(b);
+  });
+
+  layout();
+  if (window.ResizeObserver) new ResizeObserver(function () { layout(); render(); }).observe(wrap);
+  else window.addEventListener('resize', function () { layout(); render(); });
+  render();
+})();
+</script>
+
+</body></html>
